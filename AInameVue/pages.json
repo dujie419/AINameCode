@@ -1,0 +1,149 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "AI 智能起名" }
+    },
+    {
+      "path": "pages/login/login",
+      "style": { "navigationBarTitleText": "用户登录" }
+    },
+    {
+      "path": "pages/register/register",
+      "style": { "navigationBarTitleText": "账号注册" }
+    },
+    {
+      "path": "pages/developer/index",
+      "style": { "navigationBarTitleText": "开发者中心" }
+    },
+    {
+      "path": "pages/developer/logs",
+      "style": { "navigationBarTitleText": "调用记录" }
+    },
+    {
+      "path": "pages/admin/login",
+      "style": { "navigationBarTitleText": "管理员登录" }
+    },
+    {
+      "path": "pages/admin/index",
+      "style": { "navigationBarTitleText": "后台首页" }
+    },
+    {
+      "path": "pages/admin/users",
+      "style": { "navigationBarTitleText": "用户管理" }
+    },
+    {
+      "path": "pages/admin/name-records",
+      "style": { "navigationBarTitleText": "命名记录" }
+    },
+    {
+      "path": "pages/admin/experts",
+      "style": { "navigationBarTitleText": "专家审核" }
+    },
+    {
+      "path": "pages/admin/open-platform",
+      "style": { "navigationBarTitleText": "开放平台管理" }
+    },
+    {
+      "path": "pages/brand/visual-generate",
+      "style": { "navigationBarTitleText": "品牌视觉生成" }
+    },
+    {
+      "path": "pages/brand/visual-result",
+      "style": { "navigationBarTitleText": "品牌视觉方案" }
+    },
+    {
+      "path": "pages/expert/index",
+      "style": { "navigationBarTitleText": "专家精选" }
+    },
+    {
+      "path": "pages/expert/detail",
+      "style": { "navigationBarTitleText": "专家详情" }
+    },
+    {
+      "path": "pages/expert/order",
+      "style": { "navigationBarTitleText": "购买专家服务" }
+    },
+    {
+      "path": "pages/expert/apply",
+      "style": { "navigationBarTitleText": "申请专家" }
+    },
+    {
+      "path": "pages/expert/workbench",
+      "style": { "navigationBarTitleText": "专家工作台" }
+    },
+    {
+      "path": "pages/user/center",
+      "style": {
+        "navigationBarTitleText": "个人中心",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/user/edit-profile",
+      "style": { "navigationBarTitleText": "编辑资料" }
+    },
+    {
+      "path": "pages/user/wallet",
+      "style": { "navigationBarTitleText": "我的余额" }
+    },
+    {
+      "path": "pages/user/recharge",
+      "style": { "navigationBarTitleText": "余额充值" }
+    },
+    {
+      "path": "pages/user/membership",
+      "style": { "navigationBarTitleText": "开通会员" }
+    },
+    {
+      "path": "pages/user/orders",
+      "style": { "navigationBarTitleText": "我的订单" }
+    },
+    {
+      "path": "pages/user/order-detail",
+      "style": { "navigationBarTitleText": "订单详情" }
+    },
+    {
+      "path": "pages/expert-center/index",
+      "style": { "navigationBarTitleText": "专家中心" }
+    },
+    {
+      "path": "pages/expert-center/orders",
+      "style": { "navigationBarTitleText": "专家订单" }
+    },
+    {
+      "path": "pages/expert-center/income",
+      "style": { "navigationBarTitleText": "专家收入" }
+    },
+    {
+      "path": "pages/expert-center/profile",
+      "style": { "navigationBarTitleText": "专家资料" }
+    },
+    {
+      "path": "pages/expert-center/reviews",
+      "style": { "navigationBarTitleText": "评价管理" }
+    },
+    {
+      "path": "pages/expert-center/after-sales",
+      "style": { "navigationBarTitleText": "售后管理" }
+    },
+    {
+      "path": "pages/community/index",
+      "style": { "navigationBarTitleText": "灵感投票所" }
+    },
+    {
+      "path": "pages/community/detail",
+      "style": { "navigationBarTitleText": "投票详情" }
+    },
+    {
+      "path": "pages/community/create",
+      "style": { "navigationBarTitleText": "发起投票" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "AI 起名",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  }
+}

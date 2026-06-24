@@ -1,0 +1,14 @@
+.env
+**/.env
+__pycache__/
+*.pyc
+unpackage/
+.venv/
+**/.venv/
+.idea/
+**/.idea/
+node_modules/
+dist/
+AInameProject/chroma_rag_db/
+AInameProject/uploads/
+AInameProject/reports/

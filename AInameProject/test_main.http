@@ -1,0 +1,398 @@
+# Test your FastAPI endpoints
+
+GET http://127.0.0.1:8000/
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/hello/User
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8000/email/text?email=1227869890@qq.com
+Accept: application/json
+
+###
+GET http://127.0.0.1:8000/auth/code?email=1227869890@qq.com
+Accept: application/json
+
+###
+POST http://127.0.0.1:8000/auth/register
+Content-Type: application/json
+
+{
+  "email":"1227869890@qq.com",
+  "username": "dujie",
+  "password": "123456",
+  "confirm_password": "123456",
+  "code": "9808"
+}
+
+###
+POST http://127.0.0.1:8000/auth/login
+Content-Type: application/json
+
+{
+  "email":"1227869890@qq.com",
+  "password": "123456"
+}
+
+###
+POST http://127.0.0.1:8000/name/get_names
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+{
+  "category": "宠物名",
+  "length": "两字",
+  "gender": "不限",
+  "other": "一只缅因猫，要尽量大气一点"
+}
+
+###
+POST http://127.0.0.1:8000/name/get_names
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+{
+  "category": "企业名",
+  "other": "我们要推出一款全新的AI智能硬件，希望能起个好名字"
+}
+
+###
+POST http://127.0.0.1:8000/name/generate
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+{
+  "category": "企业名",
+  "other": "我们要推出一款全新的AI智能硬件，希望能起个好名字"
+}
+
+###
+POST http://127.0.0.1:8000/name/feedback
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+{
+  "thread_id": "b9d56fd0-c22c-4fea-a2a8-018a638712f7",
+  "category": "企业名",
+  "feedback": "我喜欢上一轮生成的‘熠新’这个名字。请保留它，并以此为基调，把其他4个名字的第一个字全部换成五行属‘火’的字。"
+}
+
+###
+POST http://127.0.0.1:8000/knowledge/upload
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="company_rules.txt"
+Content-Type: text/plain
+
+< ./company_rules.txt
+--WebAppBoundary--
+
+
+### 第一轮：首次起名
+POST http://127.0.0.1:8000/name/generate
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyIiwic3ViIjoiMSJ9.RO9IS7sMG0v994dxn8BH1Qj05ZugCSezaq62FZl1Nrk
+
+{
+  "category": "企业名",
+  "surname": "",
+  "length": "五个字以上",
+  "gender": "不限",
+  "other": "一家做环保新材料的初创公司",
+  "exclude": []
+}
+
+
+### ================= Admin System Tests =================
+### 1. Admin login
+### Copy access_token from response and paste it into @admin_token below.
+
+POST http://127.0.0.1:8000/admin/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "admin",
+  "password": "admin123456"
+}
+
+###
+@admin_token = paste_admin_access_token_here
+@user_id = 1
+
+
+### 2. Dashboard statistics
+
+GET http://127.0.0.1:8000/admin/dashboard/statistics
+Accept: application/json
+
+
+### ================= Marketplace Tests =================
+### Requires normal user token.
+
+@market_user_token = paste_normal_user_token_here
+@market_admin_token = paste_admin_access_token_here
+@expert_id = 1
+@expert_order_id = 1
+@community_post_id = 1
+@candidate_id = 1
+
+
+### Apply expert
+
+POST http://127.0.0.1:8000/expert/apply
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+{
+  "name": "张老师",
+  "title": "国学命名专家",
+  "description": "从业10年，擅长宝宝起名与传统文化分析。",
+  "tags": ["国学", "宝宝起名"],
+  "price": 199,
+  "experience_years": 10
+}
+
+
+### Admin list pending experts
+
+GET http://127.0.0.1:8000/admin/experts?status=pending
+Accept: application/json
+Authorization: Bearer {{market_admin_token}}
+
+
+### Admin approve expert
+
+PUT http://127.0.0.1:8000/admin/experts/{{expert_id}}/approve
+Accept: application/json
+Authorization: Bearer {{market_admin_token}}
+
+
+### List approved experts
+
+GET http://127.0.0.1:8000/experts?page=1&page_size=10
+Accept: application/json
+
+
+### Expert detail
+
+GET http://127.0.0.1:8000/experts/{{expert_id}}
+Accept: application/json
+
+
+### Create expert order
+
+POST http://127.0.0.1:8000/expert-orders
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+{
+  "expert_id": {{expert_id}},
+  "name_record_id": null
+}
+
+
+### Expert workbench orders
+
+GET http://127.0.0.1:8000/expert/orders
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+
+### Submit expert report
+
+POST http://127.0.0.1:8000/expert/orders/{{expert_order_id}}/report
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+{
+  "summary": "该名称整体传播性较强。",
+  "analysis": "音形义较协调，适合商业品牌使用。",
+  "suggestions": "建议同步查询商标与域名，并建立统一视觉规范。"
+}
+
+
+### User view expert order/report
+
+GET http://127.0.0.1:8000/expert-orders/{{expert_order_id}}
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+
+### Create community vote post
+
+POST http://127.0.0.1:8000/community/posts
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+{
+  "title": "帮我选一个AI公司名称",
+  "description": "做AI硬件创业",
+  "candidates": ["智穹科技", "未来智联", "穹界智能"]
+}
+
+
+### List community posts
+
+GET http://127.0.0.1:8000/community/posts?sort=latest&page=1&page_size=10
+Accept: application/json
+
+
+### Community post detail
+
+GET http://127.0.0.1:8000/community/posts/{{community_post_id}}
+Accept: application/json
+
+
+### Vote community candidate
+
+POST http://127.0.0.1:8000/community/posts/{{community_post_id}}/vote
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{market_user_token}}
+
+{
+  "candidate_id": {{candidate_id}}
+}
+
+
+### Community result
+
+GET http://127.0.0.1:8000/community/posts/{{community_post_id}}/result
+Accept: application/json
+
+
+### Community rank
+
+GET http://127.0.0.1:8000/community/rank
+Accept: application/json
+
+
+### ================= Brand Visual Image Tests =================
+### Requires normal user token, not admin token.
+### Copy token from /auth/login response.
+
+@user_token = paste_normal_user_token_here
+@brand_visual_record_id = 1
+
+
+### Generate brand visual text plan
+
+POST http://127.0.0.1:8000/brand/visual/generate
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "name": "智穹科技",
+  "industry": "人工智能硬件",
+  "style": "科技感、未来感、高端",
+  "meaning": "智能连接未来，探索无限可能",
+  "target_users": "AI硬件创业团队",
+  "usage_scene": "官网、名片、融资BP、社交媒体"
+}
+
+
+### Generate logo image from logo_prompt
+### Paste logo_prompt from previous response below.
+
+POST http://127.0.0.1:8000/brand/visual/image
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "record_id": {{brand_visual_record_id}},
+  "logo_prompt": "为中文品牌“智穹科技”设计一张高质量Logo概念图，科技感、未来感、高端，蓝银配色，简洁几何符号，适合AI硬件品牌。",
+  "size": "1024*1024",
+  "n": 1
+}
+Authorization: Bearer {{admin_token}}
+
+
+### 3. List normal users - page 1
+
+GET http://127.0.0.1:8000/admin/users?page=1&page_size=10
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+
+### 4. Search normal users by email or username
+
+GET http://127.0.0.1:8000/admin/users?page=1&page_size=10&keyword=1227869890
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+
+### 5. Get normal user detail
+
+GET http://127.0.0.1:8000/admin/users/{{user_id}}
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+
+### 6. Disable normal user
+
+PUT http://127.0.0.1:8000/admin/users/{{user_id}}/status
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "status": "disabled"
+}
+
+
+### 7. Enable normal user
+
+PUT http://127.0.0.1:8000/admin/users/{{user_id}}/status
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "status": "active"
+}
+
+
+### 8. List name records - reserved interface
+### The project currently has no standalone name record table, so items is expected to be [].
+
+GET http://127.0.0.1:8000/admin/name-records?page=1&page_size=10
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+
+### 9. Filter name records - reserved interface
+
+GET http://127.0.0.1:8000/admin/name-records?page=1&page_size=10&user_id={{user_id}}&naming_type=company&keyword=AI
+Accept: application/json
+Authorization: Bearer {{admin_token}}
+
+
+### 10. Verify normal user token cannot access admin API
+### Replace the token below with a normal /auth/login token. Expected: 403.
+
+GET http://127.0.0.1:8000/admin/dashboard/statistics
+Accept: application/json
+Authorization: Bearer paste_normal_user_token_here
+
+
+### 11. Verify missing admin token is rejected
+### Expected: 403 Not authenticated.
+
+GET http://127.0.0.1:8000/admin/dashboard/statistics
+Accept: application/json

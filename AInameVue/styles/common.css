@@ -1,0 +1,99 @@
+.app-page {
+  min-height: 100vh;
+  padding: 30rpx;
+  background: #f5f7fa;
+  box-sizing: border-box;
+}
+
+.page,
+.container {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.app-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+  gap: 20rpx;
+}
+
+.app-title {
+  font-size: 42rpx;
+  font-weight: 700;
+  color: #111827;
+}
+
+.app-subtitle,
+.app-muted {
+  color: #6b7280;
+  font-size: 24rpx;
+  margin-top: 8rpx;
+}
+
+.app-panel {
+  background: #fff;
+  border-radius: 10rpx;
+  padding: 26rpx;
+}
+
+.panel,
+.form-card,
+.card,
+.summary,
+.order,
+.item,
+.record-item,
+.user-item,
+.key-item,
+.stat,
+.stat-item,
+.secret-box,
+.log-item,
+.post,
+.cand,
+.profile,
+.balance {
+  box-shadow: 0 6rpx 18rpx rgba(17,24,39,0.04);
+}
+
+button {
+  font-weight: 700;
+}
+
+input,
+textarea {
+  color: #111827;
+}
+
+.app-empty {
+  margin-top: 120rpx;
+  text-align: center;
+  color: #6b7280;
+  font-size: 26rpx;
+}
+
+.app-button-ghost {
+  margin: 0;
+  background: #fff;
+  color: #111827;
+  border-radius: 8rpx;
+}
+
+.app-button-primary {
+  background: #111827;
+  color: #fff;
+  border-radius: 10rpx;
+}
+
+.app-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 8rpx;
+  padding: 20rpx;
+}
