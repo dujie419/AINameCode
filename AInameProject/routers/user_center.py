@@ -51,6 +51,11 @@ from schemas.account import (
     WalletTransactionOut,
 )
 from services.quota_service import quota_summary
+from services.partner_commission_service import (
+    create_partner_commission_for_payment,
+    create_partner_commission_for_wallet_order,
+    reverse_partner_commission_for_order,
+)
 
 router = APIRouter(prefix="/user", tags=["user-center"])
 auth_handler = AuthHandler()
@@ -310,6 +315,7 @@ async def apply_payment_result(
                 expert_order = await session.scalar(select(ExpertOrder).where(ExpertOrder.id == order.related_id))
                 if expert_order:
                     expert_order.status = "paid"
+            await create_partner_commission_for_payment(payment, session, now)
     elif payment.business_type == "membership":
         member_order = await session.scalar(select(MembershipOrder).where(MembershipOrder.id == payment.business_id))
         if member_order and member_order.status != "paid":
@@ -336,6 +342,7 @@ async def apply_payment_result(
             member_order.starts_at = starts_at
             member_order.expires_at = expires_at
             member_order.paid_at = now
+            await create_partner_commission_for_payment(payment, session, now)
     else:
         raise HTTPException(status_code=400, detail="Unsupported payment business type")
 
@@ -673,6 +680,7 @@ async def pay_order_by_balance(
         expert_order = await session.scalar(select(ExpertOrder).where(ExpertOrder.id == order.related_id))
         if expert_order:
             expert_order.status = "paid"
+    await create_partner_commission_for_wallet_order(order, session, order.paid_at)
     await session.commit()
     await session.refresh(order)
     return order_out(order)
@@ -765,6 +773,7 @@ async def create_order_refund(
             description=f"refund order {order.order_no}",
             related_order_id=order.id,
         ))
+    await reverse_partner_commission_for_order(order.id, session, data.reason or f"refund order {order.order_no}")
     await session.commit()
     await session.refresh(refund)
     return refund_out(refund)

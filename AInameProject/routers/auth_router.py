@@ -53,6 +53,7 @@ async def get_email_code(
 
 from schemas.user_schemas import RegisterIn, UserCreateSchema, LoginIn,LoginOut
 from repository.user_repo import UserRepository
+from services.invite_service import bind_inviter_and_grant_reward, bind_partner_attribution
 
 @router.post("/register",response_model=None)
 async def register(
@@ -81,7 +82,14 @@ async def register(
             username=userinfo.username,
             password=userinfo.password
     )
-    await userRepository.create_user(userCreateSchema)
+    user = await userRepository.create_user(userCreateSchema)
+
+    if userinfo.invite_code:
+        await bind_inviter_and_grant_reward(user, userinfo.invite_code, session, source="register")
+        await session.commit()
+    if userinfo.partner_code:
+        await bind_partner_attribution(user, userinfo.partner_code, session, source="register")
+        await session.commit()
 
     await redis.delete(userinfo.email)
     return {"message":"恭喜您注册成功"}

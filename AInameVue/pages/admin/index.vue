@@ -37,6 +37,8 @@
       <button class="menu-btn" @tap="goUsers">用户管理</button>
       <button class="menu-btn" @tap="goRecords">命名记录</button>
       <button class="menu-btn important" @tap="goExperts">专家审核</button>
+      <button class="menu-btn partner" @tap="goPartners">合伙人审核</button>
+      <button class="menu-btn finance" @tap="goPartnerFinance">合伙人财务</button>
       <button class="menu-btn platform" @tap="goOpenPlatform">开放平台管理</button>
     </view>
   </view>
@@ -66,6 +68,8 @@ const loadData = async () => {
 const goUsers = () => goPage("/pages/admin/users");
 const goRecords = () => goPage("/pages/admin/name-records");
 const goExperts = () => goPage("/pages/admin/experts");
+const goPartners = () => goPage("/pages/admin/partners");
+const goPartnerFinance = () => goPage("/pages/admin/partner-finance");
 const goOpenPlatform = () => goPage("/pages/admin/open-platform");
 const logout = () => {
   uni.removeStorageSync("admin_token");
@@ -85,5 +89,7 @@ onShow(loadData);
 .menu { margin-top: 40rpx; }
 .menu-btn { background: #fff; color: #1f2937; border-radius: 10rpx; margin-bottom: 20rpx; }
 .menu-btn.important { background: #111827; color: #fff; }
+.menu-btn.partner { background: #7c3aed; color: #fff; }
+.menu-btn.finance { background: #1d4ed8; color: #fff; }
 .menu-btn.platform { background: #0f766e; color: #fff; }
 </style>

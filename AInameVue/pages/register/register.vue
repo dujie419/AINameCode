@@ -15,6 +15,9 @@
     
     <input class="input-box" v-model="form.password" type="password" placeholder="请输入密码 (至少6位)" />
     <input class="input-box" v-model="form.confirm_password" type="password" placeholder="请再次确认密码" />
+
+    <input class="input-box" v-model="form.invite_code" placeholder="邀请码（选填）" />
+    <view v-if="form.partner_code" class="channel-tip">已识别合伙人渠道：{{ form.partner_code }}</view>
     
     <button class="btn-primary" :loading="loading" @click="handleRegister">立即注册</button>
     <view class="link" @click="goLogin">已有账号？去登录</view>
@@ -23,6 +26,7 @@
 
 <script setup>
 import { ref } from "vue";
+import { onLoad } from "@dcloudio/uni-app";
 import http from "@/http/http.js";
 import { goLogin as routerGoLogin } from "@/utils/router.js";
 
@@ -32,12 +36,31 @@ const form = ref({
   email: "",
   code: "",
   password: "",
-  confirm_password: ""
+  confirm_password: "",
+  invite_code: "",
+  partner_code: ""
 });
 
 const loading = ref(false);
 const countdown = ref(0); // 倒计时秒数
 let timer = null; // 定时器
+
+onLoad((query) => {
+  const inviteCode = query.invite_code || query.inviteCode || query.ic || "";
+  if (inviteCode) {
+    form.value.invite_code = String(inviteCode).trim();
+    uni.setStorageSync("invite_code", form.value.invite_code);
+  } else {
+    form.value.invite_code = uni.getStorageSync("invite_code") || "";
+  }
+  const partnerCode = query.partner_code || query.partnerCode || query.pc || "";
+  if (partnerCode) {
+    form.value.partner_code = String(partnerCode).trim();
+    uni.setStorageSync("partner_code", form.value.partner_code);
+  } else {
+    form.value.partner_code = uni.getStorageSync("partner_code") || "";
+  }
+});
 
 // --- 发送邮箱验证码 ---
 const sendCode = async () => {
@@ -86,6 +109,8 @@ const handleRegister = async () => {
   try {
     // 2. 发起注册网络请求
     await http.register(form.value);
+    uni.removeStorageSync("invite_code");
+    uni.removeStorageSync("partner_code");
     
     uni.showToast({ title: "注册成功！", icon: "success" });
     // 3. 延迟跳转回登录页
@@ -119,6 +144,8 @@ const goLogin = () => {
 .code-input { flex: 1; margin-bottom: 0; /* 抵消原有的 margin-bottom */ border-bottom: 1px solid #eee; }
 .code-btn { width: 220rpx; font-size: 24rpx; background: #f0f0f0; color: #333; margin-left: 20rpx; border-radius: 8rpx; padding: 0; line-height: 70rpx;}
 .code-btn::after { border: none; }
+
+.channel-tip { color: #0f766e; font-size: 24rpx; line-height: 1.5; margin: -18rpx 10rpx 24rpx; }
 
 /* 按钮与链接 */
 .btn-primary { background-color: #007AFF; color: white; margin-top: 50rpx; border-radius: 50rpx; font-size: 32rpx;}

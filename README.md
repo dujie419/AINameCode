@@ -123,4 +123,5 @@ python rag_worker.py
 ## 说明
 
 - `.env`、虚拟环境、IDE 配置、本地 Chroma 数据库、上传文件和生成报告默认不会提交到 Git。
+- `.env.example` 只保留配置项名称和脱敏占位符，实际 API Key、数据库密码、JWT 密钥等敏感信息请只写入本地 `.env` 或部署环境变量。
 - 更完整的业务设计与接口说明见 `PROJECT_DEVELOPMENT_DOC.md` 和 `AInameProject/docs/`。

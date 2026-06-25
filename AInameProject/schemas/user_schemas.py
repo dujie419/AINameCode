@@ -10,6 +10,8 @@ class RegisterIn(BaseModel):
     confirm_password: RawPasswordStr
     # 验证用户的有效性
     code:Annotated[str,Field(...,min_length=4,max_length=4)]
+    invite_code: Annotated[str | None, Field(None, max_length=32)] = None
+    partner_code: Annotated[str | None, Field(None, max_length=32)] = None
 
     # 完成确认密码的校验
     @model_validator(mode="after")

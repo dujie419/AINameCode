@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.account import UsageRecord, UserMembership
+from models.growth import UserQuotaGrant
 
 
 FREE_LIMITS = {
@@ -39,6 +40,7 @@ class QuotaState:
     remaining: int
     membership_status: str
     period_start: date
+    bonus_remaining: int = 0
 
 
 def current_period_start(period_type: str) -> date:
@@ -87,7 +89,17 @@ async def get_usage_state(user_id: int, usage_type: str, session: AsyncSession) 
             UsageRecord.period_start == period_start,
         )
     ) or 0
-    remaining = max(quota - int(used), 0)
+    base_remaining = max(quota - int(used), 0)
+    bonus_remaining = await session.scalar(
+        select(func.coalesce(func.sum(UserQuotaGrant.total_amount - UserQuotaGrant.used_amount), 0)).where(
+            UserQuotaGrant.user_id == int(user_id),
+            UserQuotaGrant.usage_type == usage_type,
+            UserQuotaGrant.status == "active",
+            UserQuotaGrant.total_amount > UserQuotaGrant.used_amount,
+            ((UserQuotaGrant.expires_at.is_(None)) | (UserQuotaGrant.expires_at > datetime.now())),
+        )
+    ) or 0
+    remaining = base_remaining + int(bonus_remaining)
     return QuotaState(
         usage_type=usage_type,
         period_type=period_type,
@@ -96,6 +108,7 @@ async def get_usage_state(user_id: int, usage_type: str, session: AsyncSession) 
         remaining=remaining,
         membership_status=membership_status,
         period_start=period_start,
+        bonus_remaining=int(bonus_remaining),
     )
 
 
@@ -119,6 +132,32 @@ async def record_usage(
         related_id: int | None = None,
 ) -> UsageRecord:
     state = await get_usage_state(user_id, usage_type, session)
+    base_remaining = max(state.quota - state.used, 0)
+    bonus_to_consume = max(amount - base_remaining, 0)
+    if bonus_to_consume > 0:
+        grant_result = await session.execute(
+            select(UserQuotaGrant)
+            .where(
+                UserQuotaGrant.user_id == int(user_id),
+                UserQuotaGrant.usage_type == usage_type,
+                UserQuotaGrant.status == "active",
+                UserQuotaGrant.total_amount > UserQuotaGrant.used_amount,
+                ((UserQuotaGrant.expires_at.is_(None)) | (UserQuotaGrant.expires_at > datetime.now())),
+            )
+            .order_by(UserQuotaGrant.expires_at.asc(), UserQuotaGrant.id.asc())
+        )
+        remaining_bonus_to_consume = bonus_to_consume
+        for grant in grant_result.scalars().all():
+            available = max(int(grant.total_amount) - int(grant.used_amount), 0)
+            if available <= 0:
+                continue
+            used_from_grant = min(available, remaining_bonus_to_consume)
+            grant.used_amount = int(grant.used_amount) + used_from_grant
+            if grant.used_amount >= grant.total_amount:
+                grant.status = "used"
+            remaining_bonus_to_consume -= used_from_grant
+            if remaining_bonus_to_consume <= 0:
+                break
     remaining = max(state.remaining - amount, 0)
     record = UsageRecord(
         user_id=int(user_id),
@@ -148,6 +187,7 @@ async def quota_summary(user_id: int, session: AsyncSession) -> dict:
             "quota": state.quota,
             "used": state.used,
             "remaining": state.remaining,
+            "bonus_remaining": state.bonus_remaining,
             "period_start": state.period_start,
         }
     return {

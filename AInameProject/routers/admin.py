@@ -25,6 +25,7 @@ from models.account import (
     WalletTransaction,
     ExpertFeeRule,
 )
+from models.growth import DistributionPartner, PartnerAttribution, PartnerCommissionRecord, PartnerWithdrawal
 from models.marketplace import AfterSaleRequest, CommunityCandidate, CommunityPost, CommunityVote, Expert, ExpertOrder, ExpertReview
 from models.name_record import NameCandidate, NameRecord
 from models.user import User
@@ -45,6 +46,9 @@ from schemas.admin import (
     UserStatusIn,
 )
 from services.quota_service import get_active_membership, get_usage_state, quota_summary
+from schemas.growth import PartnerOut
+from services.partner_commission_service import reverse_partner_commission_for_order
+from services.partner_commission_service import settle_due_partner_commissions
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -215,6 +219,7 @@ async def ensure_refund_for_after_sale(session: AsyncSession, item: AfterSaleReq
                 description=f"售后退款 {order.order_no}",
                 related_order_id=order.id,
             ))
+    await reverse_partner_commission_for_order(order.id, session, reason)
 
 
 def admin_expert_to_out(expert: Expert):
@@ -232,6 +237,72 @@ def admin_expert_to_out(expert: Expert):
         rating=expert.rating,
         created_at=expert.created_at,
     )
+
+
+async def admin_partner_to_out(session: AsyncSession, partner: DistributionPartner) -> PartnerOut:
+    register_count = await session.scalar(
+        select(func.count(PartnerAttribution.id)).where(PartnerAttribution.partner_id == partner.id)
+    ) or 0
+    return PartnerOut(
+        id=partner.id,
+        user_id=partner.user_id,
+        partner_type=partner.partner_type,
+        name=partner.name,
+        contact_phone=partner.contact_phone,
+        company_name=partner.company_name,
+        address=partner.address,
+        description=partner.description,
+        partner_code=partner.partner_code,
+        qr_payload=partner.qr_payload,
+        commission_rate=partner.commission_rate,
+        status=partner.status,
+        reviewed_at=partner.reviewed_at,
+        review_reason=partner.review_reason,
+        created_at=partner.created_at,
+        register_count=int(register_count),
+    )
+
+
+def admin_partner_commission_out(item: PartnerCommissionRecord) -> dict:
+    return {
+        "id": item.id,
+        "partner_id": item.partner_id,
+        "partner_user_id": item.partner_user_id,
+        "buyer_user_id": item.buyer_user_id,
+        "business_type": item.business_type,
+        "business_id": item.business_id,
+        "order_id": item.order_id,
+        "payment_order_id": item.payment_order_id,
+        "base_amount": money(item.base_amount),
+        "commission_rate": item.commission_rate,
+        "commission_amount": money(item.commission_amount),
+        "status": item.status,
+        "settlement_due_at": item.settlement_due_at,
+        "settled_at": item.settled_at,
+        "reversed_at": item.reversed_at,
+        "reverse_reason": item.reverse_reason,
+        "created_at": item.created_at,
+    }
+
+
+def admin_partner_withdrawal_out(item: PartnerWithdrawal) -> dict:
+    return {
+        "id": item.id,
+        "partner_id": item.partner_id,
+        "partner_user_id": item.partner_user_id,
+        "withdrawal_no": item.withdrawal_no,
+        "amount": money(item.amount),
+        "account_name": item.account_name,
+        "account_no": item.account_no,
+        "bank_name": item.bank_name,
+        "status": item.status,
+        "reason": item.reason,
+        "payment_channel": item.payment_channel,
+        "payment_trade_no": item.payment_trade_no,
+        "created_at": item.created_at,
+        "reviewed_at": item.reviewed_at,
+        "paid_at": item.paid_at,
+    }
 
 
 async def admin_name_record_to_out(session: AsyncSession, record: NameRecord) -> dict:
@@ -598,6 +669,221 @@ async def reject_expert(
         if user:
             user.is_expert = False
     return admin_expert_to_out(expert)
+
+
+@router.get("/partners", response_model=PageOut)
+async def admin_partners(
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        status: str | None = Query(None),
+        partner_type: str | None = Query(None),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    stmt = select(DistributionPartner)
+    count_stmt = select(func.count(DistributionPartner.id))
+    if status:
+        stmt = stmt.where(DistributionPartner.status == status)
+        count_stmt = count_stmt.where(DistributionPartner.status == status)
+    if partner_type:
+        stmt = stmt.where(DistributionPartner.partner_type == partner_type)
+        count_stmt = count_stmt.where(DistributionPartner.partner_type == partner_type)
+    total = await session.scalar(count_stmt) or 0
+    result = await session.execute(
+        stmt.order_by(DistributionPartner.id.desc()).offset((page - 1) * page_size).limit(page_size)
+    )
+    items = [await admin_partner_to_out(session, item) for item in result.scalars().all()]
+    return {"total": total, "page": page, "page_size": page_size, "items": items}
+
+
+@router.put("/partners/{partner_id}/approve", response_model=PartnerOut)
+async def approve_partner(
+        partner_id: int,
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    partner = await session.get(DistributionPartner, partner_id)
+    if not partner:
+        raise HTTPException(status_code=404, detail="合伙人申请不存在")
+    partner.status = "approved"
+    partner.reviewed_at = datetime.now()
+    partner.review_reason = None
+    await session.commit()
+    await session.refresh(partner)
+    return await admin_partner_to_out(session, partner)
+
+
+@router.put("/partners/{partner_id}/reject", response_model=PartnerOut)
+async def reject_partner(
+        partner_id: int,
+        reason: str = Query("审核拒绝"),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    partner = await session.get(DistributionPartner, partner_id)
+    if not partner:
+        raise HTTPException(status_code=404, detail="合伙人申请不存在")
+    partner.status = "rejected"
+    partner.reviewed_at = datetime.now()
+    partner.review_reason = reason
+    await session.commit()
+    await session.refresh(partner)
+    return await admin_partner_to_out(session, partner)
+
+
+@router.get("/partner-finance/summary")
+async def admin_partner_finance_summary(
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    await settle_due_partner_commissions(session)
+    partner_total = await session.scalar(select(func.count(DistributionPartner.id))) or 0
+    pending_partner_total = await session.scalar(
+        select(func.count(DistributionPartner.id)).where(DistributionPartner.status == "pending")
+    ) or 0
+    attributed_user_total = await session.scalar(select(func.count(PartnerAttribution.id))) or 0
+    pending_commission = await session.scalar(
+        select(func.coalesce(func.sum(PartnerCommissionRecord.commission_amount), 0)).where(
+            PartnerCommissionRecord.status == "settle_pending"
+        )
+    ) or 0
+    settled_commission = await session.scalar(
+        select(func.coalesce(func.sum(PartnerCommissionRecord.commission_amount), 0)).where(
+            PartnerCommissionRecord.status == "settled"
+        )
+    ) or 0
+    reversed_commission = await session.scalar(
+        select(func.coalesce(func.sum(PartnerCommissionRecord.commission_amount), 0)).where(
+            PartnerCommissionRecord.status == "reversed"
+        )
+    ) or 0
+    pending_withdraw = await session.scalar(
+        select(func.coalesce(func.sum(PartnerWithdrawal.amount), 0)).where(PartnerWithdrawal.status == "pending")
+    ) or 0
+    paid_withdraw = await session.scalar(
+        select(func.coalesce(func.sum(PartnerWithdrawal.amount), 0)).where(PartnerWithdrawal.status == "paid")
+    ) or 0
+    await session.commit()
+    return {
+        "partner_total": int(partner_total),
+        "pending_partner_total": int(pending_partner_total),
+        "attributed_user_total": int(attributed_user_total),
+        "pending_commission": money(pending_commission),
+        "settled_commission": money(settled_commission),
+        "reversed_commission": money(reversed_commission),
+        "pending_withdraw": money(pending_withdraw),
+        "paid_withdraw": money(paid_withdraw),
+    }
+
+
+@router.post("/partner-commissions/settle-due")
+async def admin_settle_due_partner_commissions(
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    settled_count = await settle_due_partner_commissions(session)
+    await session.commit()
+    return {"settled_count": settled_count}
+
+
+@router.get("/partner-commissions", response_model=PageOut)
+async def admin_partner_commissions(
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        status: str | None = Query(None),
+        partner_id: int | None = Query(None),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    stmt = select(PartnerCommissionRecord)
+    count_stmt = select(func.count(PartnerCommissionRecord.id))
+    if status:
+        stmt = stmt.where(PartnerCommissionRecord.status == status)
+        count_stmt = count_stmt.where(PartnerCommissionRecord.status == status)
+    if partner_id is not None:
+        stmt = stmt.where(PartnerCommissionRecord.partner_id == partner_id)
+        count_stmt = count_stmt.where(PartnerCommissionRecord.partner_id == partner_id)
+    total = await session.scalar(count_stmt) or 0
+    result = await session.execute(
+        stmt.order_by(PartnerCommissionRecord.id.desc()).offset((page - 1) * page_size).limit(page_size)
+    )
+    return {"total": total, "page": page, "page_size": page_size, "items": [admin_partner_commission_out(item) for item in result.scalars().all()]}
+
+
+@router.get("/partner-withdrawals", response_model=PageOut)
+async def admin_partner_withdrawals(
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        status: str | None = Query(None),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    stmt = select(PartnerWithdrawal)
+    count_stmt = select(func.count(PartnerWithdrawal.id))
+    if status:
+        stmt = stmt.where(PartnerWithdrawal.status == status)
+        count_stmt = count_stmt.where(PartnerWithdrawal.status == status)
+    total = await session.scalar(count_stmt) or 0
+    result = await session.execute(
+        stmt.order_by(PartnerWithdrawal.id.desc()).offset((page - 1) * page_size).limit(page_size)
+    )
+    return {"total": total, "page": page, "page_size": page_size, "items": [admin_partner_withdrawal_out(item) for item in result.scalars().all()]}
+
+
+@router.put("/partner-withdrawals/{withdrawal_id}/approve")
+async def approve_partner_withdrawal(
+        withdrawal_id: int,
+        payment_channel: str = Query("manual"),
+        payment_trade_no: str | None = Query(None),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    withdrawal = await session.get(PartnerWithdrawal, withdrawal_id)
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="合伙人提现申请不存在")
+    if withdrawal.status != "pending":
+        raise HTTPException(status_code=400, detail="提现申请状态不可审核")
+    user = await session.scalar(select(User).where(User.id == withdrawal.partner_user_id).with_for_update())
+    if user:
+        user.frozen_balance = max(money(user.frozen_balance) - money(withdrawal.amount), money(0))
+    withdrawal.status = "paid"
+    withdrawal.payment_channel = payment_channel
+    withdrawal.payment_trade_no = payment_trade_no
+    withdrawal.reviewed_at = datetime.now()
+    withdrawal.paid_at = datetime.now()
+    await session.commit()
+    return {"message": "合伙人提现已打款"}
+
+
+@router.put("/partner-withdrawals/{withdrawal_id}/reject")
+async def reject_partner_withdrawal(
+        withdrawal_id: int,
+        reason: str = Query("审核拒绝"),
+        admin: AdminTokenData = Depends(get_current_admin),
+        session: AsyncSession = Depends(get_session),
+):
+    withdrawal = await session.get(PartnerWithdrawal, withdrawal_id)
+    if not withdrawal:
+        raise HTTPException(status_code=404, detail="合伙人提现申请不存在")
+    if withdrawal.status != "pending":
+        raise HTTPException(status_code=400, detail="提现申请状态不可审核")
+    user = await session.scalar(select(User).where(User.id == withdrawal.partner_user_id).with_for_update())
+    if user:
+        user.frozen_balance = max(money(user.frozen_balance) - money(withdrawal.amount), money(0))
+        user.balance = money(user.balance) + money(withdrawal.amount)
+        session.add(WalletTransaction(
+            user_id=withdrawal.partner_user_id,
+            transaction_type="partner_withdraw_return",
+            amount=money(withdrawal.amount),
+            balance_after=money(user.balance),
+            description=f"partner withdrawal rejected {withdrawal.withdrawal_no}",
+            related_order_id=None,
+        ))
+    withdrawal.status = "rejected"
+    withdrawal.reason = reason
+    withdrawal.reviewed_at = datetime.now()
+    await session.commit()
+    return {"message": "合伙人提现已拒绝并退回余额"}
 
 
 @router.get("/expert-orders", response_model=PageOut)

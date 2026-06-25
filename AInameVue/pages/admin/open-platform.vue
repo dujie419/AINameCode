@@ -52,8 +52,8 @@
     <view v-if="activeTab === 'plans'">
       <view class="item" v-for="item in plans" :key="item.id">
         <view>
-          <view class="name">{{ item.name }} · ¥{{ item.price }}</view>
-          <view class="meta">额度：{{ item.quota || '不限量' }}</view>
+          <view class="name">{{ item.name }} · ¥{{ money(item.price) }}</view>
+          <view class="meta">额度：{{ quotaText(item.quota) }}</view>
           <view class="meta">{{ item.description }}</view>
         </view>
       </view>
@@ -99,6 +99,16 @@ const approveDeveloper = async (id) => {
 const rejectDeveloper = async (id) => {
   await adminApi.rejectDeveloper(id);
   await loadData();
+};
+
+const money = (value) => {
+  const amount = Number(value || 0);
+  return Number.isInteger(amount) ? String(amount) : amount.toFixed(2);
+};
+
+const quotaText = (value) => {
+  const quota = Number(value || 0);
+  return quota > 0 ? String(quota) : "不限量";
 };
 
 watch(activeTab, loadData);

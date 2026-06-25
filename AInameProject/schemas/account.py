@@ -127,6 +127,7 @@ class UsageQuotaItemOut(BaseModel):
     quota: int
     used: int
     remaining: int
+    bonus_remaining: int = 0
     period_start: date | None = None
 
 

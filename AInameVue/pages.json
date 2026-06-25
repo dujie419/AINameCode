@@ -41,6 +41,14 @@
       "style": { "navigationBarTitleText": "专家审核" }
     },
     {
+      "path": "pages/admin/partners",
+      "style": { "navigationBarTitleText": "合伙人审核" }
+    },
+    {
+      "path": "pages/admin/partner-finance",
+      "style": { "navigationBarTitleText": "合伙人财务" }
+    },
+    {
       "path": "pages/admin/open-platform",
       "style": { "navigationBarTitleText": "开放平台管理" }
     },
@@ -94,6 +102,18 @@
     {
       "path": "pages/user/membership",
       "style": { "navigationBarTitleText": "开通会员" }
+    },
+    {
+      "path": "pages/user/invite",
+      "style": { "navigationBarTitleText": "邀请好友" }
+    },
+    {
+      "path": "pages/partner/apply",
+      "style": { "navigationBarTitleText": "申请合伙人" }
+    },
+    {
+      "path": "pages/partner/center",
+      "style": { "navigationBarTitleText": "合伙人中心" }
     },
     {
       "path": "pages/user/orders",

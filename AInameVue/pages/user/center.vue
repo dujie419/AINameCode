@@ -69,6 +69,14 @@
           <view class="menu-icon orange">▣</view>
           <view class="menu-text">余额流水</view>
         </view>
+        <view class="menu-item" @tap="openPage('/pages/user/invite')">
+          <view class="menu-icon green">i</view>
+          <view class="menu-text">邀请好友</view>
+        </view>
+        <view class="menu-item" @tap="openPage('/pages/partner/center')">
+          <view class="menu-icon blue">◒</view>
+          <view class="menu-text">分销合伙人</view>
+        </view>
       </view>
 
       <view class="menu-group">

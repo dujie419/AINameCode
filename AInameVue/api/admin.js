@@ -30,6 +30,17 @@ export default {
   experts: (params = {}) => adminRequest(withQuery("/admin/experts", params), { method: "GET" }),
   approveExpert: (expertId) => adminRequest(`/admin/experts/${expertId}/approve`, { method: "PUT" }),
   rejectExpert: (expertId) => adminRequest(`/admin/experts/${expertId}/reject`, { method: "PUT" }),
+  partners: (params = {}) => adminRequest(withQuery("/admin/partners", params), { method: "GET" }),
+  approvePartner: (partnerId) => adminRequest(`/admin/partners/${partnerId}/approve`, { method: "PUT" }),
+  rejectPartner: (partnerId, reason = "审核拒绝") =>
+    adminRequest(withQuery(`/admin/partners/${partnerId}/reject`, { reason }), { method: "PUT" }),
+  partnerFinanceSummary: () => adminRequest("/admin/partner-finance/summary", { method: "GET" }),
+  settlePartnerCommissions: () => adminRequest("/admin/partner-commissions/settle-due", { method: "POST" }),
+  partnerCommissions: (params = {}) => adminRequest(withQuery("/admin/partner-commissions", params), { method: "GET" }),
+  partnerWithdrawals: (params = {}) => adminRequest(withQuery("/admin/partner-withdrawals", params), { method: "GET" }),
+  approvePartnerWithdrawal: (id) => adminRequest(`/admin/partner-withdrawals/${id}/approve`, { method: "PUT" }),
+  rejectPartnerWithdrawal: (id, reason = "审核拒绝") =>
+    adminRequest(withQuery(`/admin/partner-withdrawals/${id}/reject`, { reason }), { method: "PUT" }),
   developers: (params = {}) => adminRequest(withQuery("/admin/developers", params), { method: "GET" }),
   approveDeveloper: (developerId) => adminRequest(`/admin/developers/${developerId}/approve`, { method: "PUT" }),
   rejectDeveloper: (developerId) => adminRequest(`/admin/developers/${developerId}/reject`, { method: "PUT" }),

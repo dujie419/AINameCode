@@ -13,6 +13,7 @@ from routers.community import router as community_router
 from routers.developer import router as developer_router
 from routers.openapi import router as openapi_router
 from routers.user_center import router as user_center_router
+from routers.growth import router as growth_router
 from contextlib import asynccontextmanager
 from core.workflow import init_workflow_graph, close_workflow_graph
 from services.admin_service import init_super_admin
@@ -51,6 +52,7 @@ app.include_router(expert_center_router)
 app.include_router(community_router)
 app.include_router(developer_router)
 app.include_router(openapi_router)
+app.include_router(growth_router)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 @app.get("/")
 async def root():
